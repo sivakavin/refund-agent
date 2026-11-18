@@ -34,7 +34,9 @@ uv run pytest
 uv run python -m evals.runner
 ```
 
-Tests requiring real Supabase must use a separate isolated test project and explicitly set `SUPABASE_TEST_URL` and `SUPABASE_TEST_SECRET_KEY`. The current integration contract test skips without these values. The local LangGraph MemorySaver preserves thread context only for the lifetime of one process; deploy a durable checkpointer before scaling Cloud Run instances.
+The evaluation runner calls Groq using the fixed dataset and scores task completion, tool choice, policy compliance, response accuracy, and tool execution. It uses only in-memory fixture orders and never initializes Supabase, so evaluation refund requests cannot mutate database records. Set `LANGSMITH_TRACING=true` and configure LangSmith credentials to trace evaluation runs. It requires `GROQ_API_KEY` and uses API tokens. Results are written to `evals/results.json`.
+
+Tests requiring real Supabase must use a separate isolated test project and explicitly set `SUPABASE_TEST_URL` and `SUPABASE_TEST_SECRET_KEY`. The integration contract test skips without these values. The local LangGraph MemorySaver preserves thread context only for the lifetime of one process; deploy a durable checkpointer before scaling Cloud Run instances.
 
 ## Docker
 
@@ -50,4 +52,4 @@ Cloud Run supplies `PORT`; the container binds to it. Do not copy `.env` into an
 - `GET /health`: liveness response.
 - `POST /api/v1/chat`: accepts a message and client-scoped thread ID; returns answer and thread ID.
 
-Refund eligibility is enforced by the PostgreSQL RPC, not by the model. The evaluation runner currently loads and reports the isolated dataset only; a model-based evaluation harness and LangSmith evaluator publishing remain follow-up work.
+Refund eligibility is enforced by the PostgreSQL RPC, not by the model.
