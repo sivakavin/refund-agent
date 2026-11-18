@@ -1,0 +1,28 @@
+[project]
+name = "refund-agent"
+version = "0.2.0"
+description = "Refund management agent API"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn[standard]>=0.34,<1",
+  "pydantic>=2.10,<3",
+  "pydantic-settings>=2.7,<3",
+  "python-dotenv>=1.0,<2",
+  "supabase>=2.13,<3",
+  "langchain>=1.0,<2",
+  "langchain-groq>=0.3,<1",
+  "langgraph>=1.0,<2",
+  "langsmith>=0.2,<1",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3,<9", "pytest-asyncio>=0.25,<1", "httpx>=0.28,<1", "ruff>=0.9,<1"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
