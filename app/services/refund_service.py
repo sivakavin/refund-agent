@@ -1,7 +1,7 @@
 import re
 from datetime import date
 from typing import Any
-from app.repositories.order_repository import OrderRepository, order_age_days
+from app.repositories.order_repository import OrderRepository
 
 
 ORDER_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
@@ -38,7 +38,7 @@ class RefundService:
         )
 
     def _order_summary(self, order: dict[str, Any]) -> dict[str, Any]:
-        age = order_age_days(order)
+        age = self._order_age_days(order)
         refunded = bool(order.get("refunded", False))
         eligible = not refunded and 0 <= age <= self.refund_window_days
         reason = None
@@ -58,9 +58,9 @@ class RefundService:
             "eligibility_reason": reason,
         }
 
-
-def order_age_days(order: dict[str, Any], today: date | None = None) -> int:
-    ordered_on = order["ordered_on"]
-    if isinstance(ordered_on, str):
-        ordered_on = date.fromisoformat(ordered_on)
-    return ((today or date.today()) - ordered_on).days
+    @staticmethod
+    def _order_age_days(order: dict[str, Any]) -> int:
+        ordered_on = order["ordered_on"]
+        if isinstance(ordered_on, str):
+            ordered_on = date.fromisoformat(ordered_on)
+        return (date.today() - ordered_on).days
