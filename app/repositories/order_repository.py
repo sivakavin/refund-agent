@@ -1,4 +1,5 @@
 from typing import Any
+from datetime import date
 from supabase import Client
 
 
@@ -55,3 +56,10 @@ class OrderRepository:
             return data[0] if isinstance(data, list) and data else data
         except Exception as exc:
             raise RepositoryError("Refund operation failed") from exc
+
+
+def order_age_days(order: dict[str, Any], today: date | None = None) -> int:
+    ordered_on = order["ordered_on"]
+    if isinstance(ordered_on, str):
+        ordered_on = date.fromisoformat(ordered_on)
+    return ((today or date.today()) - ordered_on).days
