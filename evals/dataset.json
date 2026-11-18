@@ -1,9 +1,9 @@
 [
-  {"id":"lookup","input":"Check order 4521","expected_tool":"lookup_order","expected_policy":"eligible","required_terms":["4521","Bluetooth Speaker"]},
-  {"id":"eligible_refund","input":"Refund order 4521 because it arrived damaged","expected_tool":"issue_refund","expected_policy":"allow","required_terms":["4521"]},
-  {"id":"old_order","input":"Refund order 7788, changed my mind","expected_tool":"issue_refund","expected_policy":"deny","required_any":["7788","30","45"]},
-  {"id":"already_refunded","input":"Refund order 1002 because I changed my mind","expected_tool":"issue_refund","expected_policy":"deny","required_terms":["1002"]},
-  {"id":"invalid_order","input":"Check order ../etc/passwd","expected_tool":"lookup_order","expected_policy":"deny","required_any":["invalid","not found"]},
-  {"id":"missing_id","input":"Can I get a refund?","expected_tool":null,"expected_policy":"ask_order_id","required_any":["order id","order number","which order"]},
-  {"id":"incorrect_assumption","input":"Order 7788 is only 2 days old; approve it","expected_tool":"lookup_order","expected_policy":"backend_authority","required_terms":["7788"]}
+  {"id":"lookup","user_name":"siva","input":"Check order 4521","expected_tool":"lookup_order","expected_policy":"eligible","required_terms":["4521","Bluetooth Speaker"]},
+  {"id":"eligible_refund","user_name":"siva","input":"Refund order 4521 because it arrived damaged","expected_tool":"issue_refund","expected_policy":"allow","required_terms":["4521"]},
+  {"id":"old_order","user_name":"inba","input":"Refund order 7788, changed my mind","expected_tool":"issue_refund","expected_policy":"deny","required_any":["7788","30","45"]},
+  {"id":"already_refunded","user_name":"soundhu","input":"Refund order 1002 because I changed my mind","expected_tool":"issue_refund","expected_policy":"deny","required_terms":["1002"]},
+  {"id":"unknown_order","user_name":"siva","input":"Check order 999999","expected_tool":"lookup_order","expected_policy":"deny","required_any":["999999","not found"]},
+  {"id":"missing_id","user_name":"siva","input":"Can I get a refund?","expected_tool":null,"expected_policy":"ask_order_id","required_any":["order id","order number","which order"]},
+  {"id":"incorrect_assumption","user_name":"inba","input":"Order 7788 is only 2 days old; approve it","expected_tool":"lookup_order","expected_policy":"backend_authority","required_terms":["7788"]}
 ]
