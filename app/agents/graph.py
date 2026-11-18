@@ -8,12 +8,18 @@ from app.services.refund_service import RefundService
 from app.tools.refund_tools import build_refund_tools
 
 
-def build_graph(model: BaseChatModel, service: RefundService, checkpointer=None):
+def build_graph(model: BaseChatModel, service: RefundService, user_name: str):
     tools = build_refund_tools(service)
     workflow = StateGraph(RefundAgentState)
-    workflow.add_node("assistant", assistant_node(model.bind_tools(tools)))
+
+    # The assistant chooses whether to answer or call a tool.
+    workflow.add_node("assistant", assistant_node(model.bind_tools(tools), user_name))
+
+    # ToolNode executes the selected LangChain tool and returns its result to the assistant.
     workflow.add_node("tools", ToolNode(tools))
+
     workflow.add_edge(START, "assistant")
     workflow.add_conditional_edges("assistant", tools_condition, {"tools": "tools", END: END})
     workflow.add_edge("tools", "assistant")
-    return workflow.compile(checkpointer=checkpointer or MemorySaver())
+
+    return workflow.compile(checkpointer=MemorySaver())
