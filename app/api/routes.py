@@ -14,16 +14,22 @@ async def health():
 
 @router.post("/api/v1/chat", response_model=ChatResponse)
 async def chat(payload: ChatRequest, request: Request):
-    graph = request.app.state.graph
+    graph = request.app.state.graphs[payload.user_name]
+    scoped_thread_id = f"{payload.user_name}:{payload.thread_id}"
+
     try:
         result = await graph.ainvoke(
             {"messages": [HumanMessage(content=payload.message)]},
-            config={"configurable": {"thread_id": payload.thread_id}},
+            config={"configurable": {"thread_id": scoped_thread_id}},
         )
         answer = result["messages"][-1].content
         if not isinstance(answer, str):
             answer = str(answer)
-        return ChatResponse(answer=answer, thread_id=payload.thread_id)
+        return ChatResponse(
+            answer=answer,
+            thread_id=payload.thread_id,
+            user_name=payload.user_name,
+        )
     except Exception:
         logger.exception("Chat request failed")
         raise HTTPException(status_code=503, detail="The assistant is temporarily unavailable.")

@@ -1,55 +1,68 @@
 # Refund Management Agent
 
-FastAPI backend using Groq, LangGraph, Supabase PostgreSQL, Pydantic Settings, and optional LangSmith tracing. The backend records a **simulated refund approval**; it does not transfer money.
+FastAPI backend using Groq, LangGraph, Supabase PostgreSQL, and Pydantic Settings. Refunds are simulated database approvals; no money is transferred.
+
+## Demo accounts
+
+The sample data is assigned as follows:
+
+| Demo account | Order |
+|---|---|
+| siva | 4521 — Bluetooth Speaker |
+| inba | 7788 — Running Shoes |
+| soundhu | 1002 — Phone Cover |
+
+Apply migrations in order to a development Supabase project:
+
+1. `supabase/migrations/202611180001_orders_and_atomic_refund.sql`
+2. `supabase/migrations/202611180002_demo_order_accounts.sql`
+
+The second migration adds account ownership and replaces the refund function with an account-scoped version. It does not delete existing orders. Unassigned existing orders won’t appear in demo account lists.
+
+These names are **demo account selectors, not authentication**. Do not use this account-selection pattern to protect real customer data; production must bind the account to a verified login.
 
 ## Configure
 
-Copy `.env.example` to `.env` and set `GROQ_API_KEY`, `SUPABASE_URL`, and backend-only `SUPABASE_SECRET_KEY`. Configure `LANGSMITH_API_KEY` only when tracing is enabled. Never expose the Supabase secret key to the React app.
-
-Apply `supabase/migrations/202611180001_orders_and_atomic_refund.sql` to a development Supabase project. It creates orders with RLS enabled, an atomic row-locking RPC, and inserts sample orders only when IDs are absent. Review seed SQL before running against any non-development database.
+Copy `.env.example` to `.env`. Set `GROQ_API_KEY`, `SUPABASE_URL`, and backend-only `SUPABASE_SECRET_KEY`. Never send the Supabase secret to the frontend.
 
 | Variable | Purpose |
 |---|---|
 | GROQ_API_KEY | Groq credential |
-| GROQ_MODEL | Model name (default `llama-3.3-70b-versatile`) |
+| GROQ_MODEL | Model ID, e.g. `openai/gpt-oss-120b` |
 | SUPABASE_URL | Supabase project URL |
 | SUPABASE_SECRET_KEY | Backend secret key |
-| LANGSMITH_API_KEY | Optional trace credential |
-| LANGSMITH_PROJECT | LangSmith project |
-| LANGSMITH_TRACING | Enable LangSmith tracing |
-| REFUND_WINDOW_DAYS | Refund policy window (default 30) |
+| LANGSMITH_API_KEY | Optional tracing credential |
+| LANGSMITH_PROJECT | LangSmith project name |
+| LANGSMITH_TRACING | Enable tracing |
+| REFUND_WINDOW_DAYS | Refund window, default 30 |
 | FRONTEND_ORIGIN | Allowed frontend origin |
 
-## Run locally
+## Run
 
 ```sh
 uv sync
 uv run uvicorn app.main:app --reload
-```
-
-Swagger UI: `/docs`. Health check: `GET /health`. Chat: `POST /api/v1/chat` with `{"message":"Check order 4521","thread_id":"customer-001"}`.
-
-```sh
 uv run pytest
-uv run python -m evals.runner
 ```
 
-The evaluation runner calls Groq using the fixed dataset and scores task completion, tool choice, policy compliance, response accuracy, and tool execution. It uses only in-memory fixture orders and never initializes Supabase, so evaluation refund requests cannot mutate database records. Set `LANGSMITH_TRACING=true` and configure LangSmith credentials to trace evaluation runs. It requires `GROQ_API_KEY` and uses API tokens. Results are written to `evals/results.json`.
+Swagger UI is at `/docs`. Chat endpoint: `POST /api/v1/chat`.
 
-Tests requiring real Supabase must use a separate isolated test project and explicitly set `SUPABASE_TEST_URL` and `SUPABASE_TEST_SECRET_KEY`. The integration contract test skips without these values. The local LangGraph MemorySaver preserves thread context only for the lifetime of one process; deploy a durable checkpointer before scaling Cloud Run instances.
+Example request:
 
-## Docker
-
-```sh
-docker build -t refund-agent .
-docker run --env-file .env -p 8080:8080 refund-agent
+```json
+{"message":"List my orders","thread_id":"chat-1","user_name":"siva"}
 ```
 
-Cloud Run supplies `PORT`; the container binds to it. Do not copy `.env` into an image.
+Use `siva`, `inba`, or `soundhu`. Older requests without `user_name` default to `siva`. Each user's tools are bound to that account before the graph runs, so the model cannot pass a different name to a tool.
 
-## API
+## How tool calling is wired
 
-- `GET /health`: liveness response.
-- `POST /api/v1/chat`: accepts a message and client-scoped thread ID; returns answer and thread ID.
+`build_refund_tools` defines the three LangChain tools. `build_graph` registers them in a LangGraph `ToolNode`. The assistant node routes tool requests to that node; after execution, the graph returns the result to the assistant.
 
-Refund eligibility is enforced by the PostgreSQL RPC, not by the model.
+- `list_orders`: lists the current demo account's orders.
+- `lookup_order`: returns an account's order details and backend eligibility.
+- `issue_refund`: records a simulated approval through the atomic SQL function.
+
+The evaluation runner uses in-memory fixtures and does not connect to Supabase. It requires a Groq API key and writes scores to `evals/results.json`.
+
+The app uses an in-memory LangGraph checkpointer. Conversation state is lost when the process restarts.
