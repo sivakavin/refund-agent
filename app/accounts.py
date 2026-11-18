@@ -1,1 +1,1 @@
-DEMO_USERS = ("siva", "inba", "soundhu")\n
+DEMO_USERS = ("siva", "inba", "soundhu")
