@@ -5,8 +5,8 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from app.agents.nodes import assistant_node
 from app.agents.state import RefundAgentState
 from app.services.refund_service import RefundService
-from app.tools.refund_tools import build_refund_tools
 from app.services.policy_rag_service import PolicyRagService
+from app.tools.refund_tools import build_refund_tools
 
 
 def build_graph(
@@ -19,7 +19,14 @@ def build_graph(
     workflow = StateGraph(RefundAgentState)
 
     # The assistant chooses whether to answer or call a tool.
-    workflow.add_node("assistant", assistant_node(model.bind_tools(tools), user_name, policy_search_enabled=policy_service is not None))
+    workflow.add_node(
+        "assistant",
+        assistant_node(
+            model.bind_tools(tools),
+            user_name,
+            policy_search_enabled=policy_service is not None,
+        ),
+    )
 
     # ToolNode executes the selected LangChain tool and returns its result to the assistant.
     workflow.add_node("tools", ToolNode(tools))
