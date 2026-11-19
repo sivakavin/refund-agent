@@ -37,6 +37,15 @@ Copy `.env.example` to `.env`. Set `GROQ_API_KEY`, `SUPABASE_URL`, and backend-o
 | REFUND_WINDOW_DAYS | Refund window, default 30 |
 | FRONTEND_ORIGIN | Allowed frontend origin |
 
+
+## Refund policy RAG
+
+Policy documents live in the private Supabase Storage bucket named `refund-policies`. Apply migration 202611190001_policy_rag.sql, then upload PDF, DOCX, TXT, or Markdown policy files to that bucket. Keep files at the bucket root or in folders.
+
+When the API starts, it downloads supported files into a temporary directory, extracts and chunks the text, creates local FastEmbed vectors, and saves the chunks and vectors in the `refund_policy_chunks` table. Temporary copies are removed automatically. Replacing or removing a Storage file is reflected the next time the backend starts. The first startup downloads the BAAI/bge-small-en-v1.5 embedding model; subsequent startups reuse the local model cache.
+
+For written refund policy questions, the chat agent calls its policy search tool and answers from relevant passages with the source filename. Order status and refund eligibility still come from the database tools. Add the settings in `.env.example` if you want to adjust bucket, chunking, or search values.
+
 ## Run
 
 ```sh
