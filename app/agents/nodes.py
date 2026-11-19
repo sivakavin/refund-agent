@@ -3,8 +3,8 @@ from langchain_core.messages import SystemMessage
 from app.agents.prompts import system_prompt
 
 
-def assistant_node(model: BaseChatModel, user_name: str):
-    prompt = system_prompt(user_name)
+def assistant_node(model: BaseChatModel, user_name: str, policy_search_enabled: bool = False):
+    prompt = system_prompt(user_name, policy_search_enabled)
 
     def run(state: dict):
         messages = state["messages"]
