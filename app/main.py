@@ -11,6 +11,7 @@ from app.agents.graph import build_graph
 from app.api.routes import router
 from app.repositories.order_repository import OrderRepository
 from app.services.refund_service import RefundService
+from app.services.policy_rag_service import PolicyRagService
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -34,12 +35,24 @@ async def lifespan(app: FastAPI):
     )
     client = get_supabase()
 
+    # Index private policy files once at startup; the documents themselves stay in Storage.
+    policy_service = PolicyRagService(
+        client,
+        bucket=settings.policy_storage_bucket,
+        top_k=settings.policy_top_k,
+        min_similarity=settings.policy_min_similarity,
+        chunk_size=settings.policy_chunk_size,
+        chunk_overlap=settings.policy_chunk_overlap,
+    )
+    policy_service.refresh_index()
+    app.state.policy_service = policy_service
+
     # Each account gets its own graph and account-scoped repository.
     app.state.graphs = {}
     for user_name in DEMO_USERS:
         repository = OrderRepository(client, user_name)
         service = RefundService(repository, settings.refund_window_days)
-        app.state.graphs[user_name] = build_graph(model, service, user_name)
+        app.state.graphs[user_name] = build_graph(model, service, user_name, policy_service)
     yield
 
 
